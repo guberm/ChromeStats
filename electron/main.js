@@ -287,7 +287,6 @@ app.whenReady().then(async () => {
       });
     }
 
-    // S
     // Show startup notification
     setTimeout(() => {
       showNotification('Chrome Stats Monitor', 'App started successfully. Monitoring is active.');

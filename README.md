@@ -1,103 +1,244 @@
 # Chrome Stats Monitor
 
-Monitor Chrome Web Store extension statistics and receive email notifications when stats change for each extension separately.
+🚀 Desktop application for monitoring Chrome Web Store extension statistics with real-time notifications and historical tracking.
 
-## Features
+## ✨ Features
 
-- **Automated Monitoring**: Scrapes Chrome Web Store stats at configurable intervals
-- **Change Detection**: Tracks changes in user count, rating, and review count
-- **Per-Extension Alerts**: Sends individual email notifications for each extension that changes
-- **State Tracking**: Maintains a local SQLite database of all snapshots and detected changes
-- **Batch Processing**: Optional batch email notifications for multiple changes
-- **Configurable Intervals**: Set monitoring frequency as needed (default: 60 minutes)
-- **Detailed Logging**: Comprehensive logging to console and file
+### Desktop Application
+- **🖥️ Electron UI**: Beautiful desktop interface with tabbed navigation
+- **📊 Real-time Dashboard**: View all extensions, stats, and changes at a glance
+- **📈 Historical Charts**: Visualize stat changes over time with Chart.js
+- **🔔 System Notifications**: Get desktop alerts when stats change
+- **🎯 System Tray**: Minimize to tray, monitoring continues in background
+- **⚡ Quick Actions**: Manual refresh, start/stop monitoring from tray menu
 
-## Installation
+### Monitoring & Tracking
+- **🔍 Automated Monitoring**: Scrapes Chrome Web Store stats at configurable intervals
+- **👥 Profile Tracking**: Monitor ALL extensions from a developer profile automatically
+- **📉 Change Detection**: Tracks users, rating, and review count changes
+- **💾 Local Database**: SQLite storage with complete historical data
+- **📧 Email Alerts**: Per-extension notifications when stats change
+- **🔄 Background Service**: Console mode for server/headless operation
 
-### Prerequisites
+### Data & Analytics
+- **📊 Historical Data**: View stat changes over 24h, 7d, 30d periods
+- **🔍 Change History**: Complete log of all detected changes
+- **📁 Export Ready**: Data stored in portable SQLite format
+- **🎨 Visual Charts**: Line charts with multiple metrics
 
-- Node.js 14+
-- npm or yarn
-- Gmail account (for email notifications)
+## 🛠️ Tech Stack
 
-### Quick Start
+- **Electron 28.3.3** - Cross-platform desktop framework
+- **Node.js** - Backend service and scraping
+- **better-sqlite3** - Fast local database
+- **Chart.js 4.4.0** - Data visualization
+- **Cheerio** - Web scraping
+- **Nodemailer** - Email notifications
 
-**On Windows:**
-```cmd
+## 📦 Installation
+
+### Option 1: Download Release (Easiest)
+1. Download `Chrome Stats Monitor Setup 1.0.0.exe` from releases
+2. Run the installer
+3. Launch the app
+4. Configure settings and add extensions
+
+### Option 2: Build from Source
+
+```bash
+# Clone repository
 git clone https://github.com/guberm/ChromeStats.git
 cd ChromeStats
+
+# Install dependencies
 npm install
-copy .env.example .env
+
+# Copy environment template
+copy .env.example .env   # Windows
+cp .env.example .env     # macOS/Linux
+
+# Edit .env with your settings
+
+# Run in Electron mode
+npm run app
+
+# Or run in console mode
+npm start
+
+# Build Windows installer
+npm run build:win
+```
+
+## ⚙️ Configuration
+
+### 1. Email Setup (Optional but Recommended)
+
+Create `.env` file with Gmail credentials:
+
+```env
+# Email Configuration
+EMAIL_SERVICE=gmail
+EMAIL_SENDER=your-email@gmail.com
+EMAIL_PASSWORD=your-app-password
+EMAIL_RECIPIENT=your-email@gmail.com
+
+# Monitoring Settings
+MONITOR_INTERVAL=60
+NOTIFY_ON_CHANGE=true
+LOG_LEVEL=info
+```
+
+**Get Gmail App Password:**
+1. Go to [Google Account](https://myaccount.google.com)
+2. Enable 2-Step Verification
+3. Generate [App Password](https://myaccount.google.com/apppasswords)
+4. Copy 16-character password to `.env`
+
+### 2. Add Extensions to Monitor
+
+**Via UI:**
+1. Click "➕ Add Extension" button
+2. Enter profile URL: `https://chrome-stats.com/a/YOUR_PROFILE_ID`
+3. App automatically discovers and tracks all your extensions
+
+**Via Console:**
+Extensions are auto-discovered when you add a profile URL.
+
+## 🎯 Usage
+
+### Desktop Mode (Recommended)
+
+```bash
+npm run app
+```
+
+Features:
+- Dashboard with extension overview
+- Historical charts and analytics
+- Change history viewer
+- Settings management
+- System tray integration
+
+**Tray Menu:**
+- 📈 Show Dashboard
+- 🔄 Run Check Now
+- ▶️ Start/Stop Monitoring
+- ❌ Quit
+
+### Console Mode (Headless)
+
+```bash
 npm start
 ```
 
-**On macOS/Linux:**
+Perfect for:
+- Running on servers
+- Background monitoring
+- CI/CD integration
+- Scheduled tasks
+
+## 📊 Data Storage
+
+All data stored locally in:
+```
+~/.chromestats-monitor/
+└── data/
+    └── stats.db    # SQLite database
+```
+
+Database includes:
+- **extensions** - Tracked extensions
+- **stats_snapshots** - Historical stat records
+- **changes** - Detected changes log
+
+## 🔧 Development
+
 ```bash
-git clone https://github.com/guberm/ChromeStats.git
-cd ChromeStats
+# Install dependencies
 npm install
-cp .env.example .env
-npm start
+
+# Run in development mode
+npm run dev          # Console with auto-restart
+npm run app          # Electron UI
+
+# Build production
+npm run build:win    # Windows installer
+npm run build:mac    # macOS (if on Mac)
+npm run build:linux  # Linux (if on Linux)
+
+# Test scraper
+node test-scraper.js
+
+# Test monitoring
+node test-monitoring.js
+
+# Check database
+node check-db-state.js
 ```
 
-### Configuration
+## 📁 Project Structure
 
-1. **Copy environment template**
-   - Windows: `copy .env.example .env`
-   - macOS/Linux: `cp .env.example .env`
-
-2. **Edit `.env` and set your values:**
-   ```env
-   # Your Chrome Stats dashboard URL
-   CHROME_STATS_BASE_URL=https://chrome-stats.com/a/YOUR_ID
-   
-   # Gmail configuration
-   EMAIL_SERVICE=gmail
-   EMAIL_SENDER=your-email@gmail.com
-   EMAIL_PASSWORD=your-app-password
-   EMAIL_RECIPIENT=your-email@gmail.com
-   
-   # Monitoring settings
-   MONITOR_INTERVAL=60
-   NOTIFY_ON_CHANGE=true
-   LOG_LEVEL=info
-   ```
-
-3. **Gmail Setup** (Required for email notifications)
-   - Go to [Google Account](https://myaccount.google.com)
-   - Enable **2-Step Verification** if not already enabled
-   - Generate an [App Password](https://myaccount.google.com/apppasswords)
-   - Select "Mail" and "Windows Computer" (or your OS)
-   - Copy the 16-character password to `.env` as `EMAIL_PASSWORD`
-
-## Usage
-
-### Start the monitor
-
-```bash
-npm start
+```
+ChromeStats/
+├── electron/          # Electron UI
+│   ├── main.js       # Main process
+│   ├── preload.js    # IPC bridge
+│   ├── dashboard.html # UI markup
+│   ├── dashboard.js   # UI logic
+│   └── styles.css     # Styling
+├── src/              # Core logic (shared)
+│   ├── index.js      # CLI entry point
+│   ├── database.js   # SQLite operations
+│   ├── scraper.js    # Web scraping
+│   ├── scheduler.js  # Monitoring scheduler
+│   ├── email.js      # Email service
+│   └── logger.js     # Logging
+├── assets/           # Icons and resources
+├── .env             # Configuration (gitignored)
+├── .env.example     # Template
+└── package.json     # Dependencies
 ```
 
-You should see:
-```
-[2026-02-10T12:00:00.000Z] [INFO] Chrome Stats Monitor - Starting
-[2026-02-10T12:00:00.000Z] [INFO] Initializing database...
-[2026-02-10T12:00:00.000Z] [INFO] Initializing email service...
-[2026-02-10T12:00:00.000Z] [INFO] Starting monitoring scheduler...
-[2026-02-10T12:00:00.000Z] [INFO] Application initialized successfully
-```
+## 🤝 Contributing
 
-### Development mode (with auto-restart)
+Contributions welcome! Please:
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
 
-```bash
-npm run dev
-```
+## 📝 License
 
-### How it Works
+MIT License - feel free to use for personal or commercial projects
 
-1. **Initialization**: 
-   - Creates/initializes SQLite database
-   - Validates Gmail credentials
+## 🐛 Known Issues
+
+- Icon generation creates basic PNG (use custom icon for better quality)
+- First monitoring cycle has no changes (baseline established)
+- Chart requires container to be visible (fixed with setTimeout)
+
+## 💡 Tips
+
+- **First Run**: No changes will be detected initially (baseline)
+- **Testing Changes**: Use `simulate-change.js` to test notifications
+- **Multiple Profiles**: You can track extensions from multiple developer profiles
+- **Email Testing**: Check Gmail app password if emails not sending
+- **Database Reset**: Delete `~/.chromestats-monitor/data/stats.db` to start fresh
+
+## 🎯 Roadmap
+
+- [ ] Custom application icon
+- [ ] macOS/Linux builds
+- [ ] Export data to CSV/JSON
+- [ ] Advanced filtering and search
+- [ ] Multiple notification channels (Slack, Discord, etc.)
+- [ ] Web dashboard (remote monitoring)
+
+---
+
+Built with ❤️ for Chrome extension developers by Michael Guber
+
+**Support**: [Issues](https://github.com/guberm/ChromeStats/issues) | **Star**: ⭐ if you find it useful!
    - Sets up monitoring schedule
 
 2. **Monitoring Cycle** (runs at your configured interval):
