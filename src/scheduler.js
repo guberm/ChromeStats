@@ -9,6 +9,10 @@ const {
   markAsEmailed
 } = require('./database');
 const { sendExtensionNotification } = require('./email');
+const EventEmitter = require('events');
+
+// Event emitter for cross-module communication
+const monitoringEvents = new EventEmitter();
 
 let monitoringJob = null;
 
@@ -74,6 +78,12 @@ async function runMonitoringCycle() {
 
             if (Object.keys(changes).length > 0) {
               logger.info(`Changes detected for ${latestStats.name}`);
+
+              // Emit event for UI notification
+              monitoringEvents.emit('changes-detected', {
+                extensionName: latestStats.name,
+                changes: changes
+              });
 
               // Record each change
               for (const [changeType, changeData] of Object.entries(changes)) {
@@ -191,5 +201,6 @@ function stopScheduler() {
 module.exports = {
   startScheduler,
   stopScheduler,
-  runMonitoringCycle
+  runMonitoringCycle,
+  monitoringEvents
 };

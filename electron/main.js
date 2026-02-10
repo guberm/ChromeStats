@@ -1,4 +1,4 @@
-const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage } = require('electron');
+const { app, BrowserWindow, ipcMain, Tray, Menu, nativeImage, Notification } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const os = require('os');
@@ -23,6 +23,7 @@ for (const envPath of possibleEnvPaths) {
 let mainWindow = null;
 let tray = null;
 let schedulerRunning = false;
+let monitoringEvents = null;
 let logger = null;
 let initializeDatabase = null;
 let initializeEmailService = null;
@@ -75,38 +76,76 @@ function createWindow() {
   });
 }
 
-function createTray() {
+async function createTray() {
   const trayIconPath = path.join(__dirname, '../assets/icon.png');
   
   // Create a default icon if file doesn't exist
   let trayIcon;
   if (fs.existsSync(trayIconPath)) {
     trayIcon = nativeImage.createFromPath(trayIconPath);
+    // Resize for better display on Windows
+    trayIcon = trayIcon.resize({ width: 16, height: 16 });
   } else {
     // Create a simple default icon (empty image)
     trayIcon = nativeImage.createEmpty();
   }
   
-  tray = new Tray(trayIcon);
+  if (!tray) {
+    tray = new Tray(trayIcon);
+  } else {
+    tray.setImage(trayIcon);
+  }
+
+  // Get extension count for display
+  let extensionCount = 0;
+  try {
+    if (dbApi) {
+      const extensions = await dbApi.getExtensions();
+      extensionCount = extensions.length;
+    }
+  } catch (err) {
+    console.error('Failed to get extension count:', err);
+  }
+
+  const statusLabel = schedulerRunning ? '🟢 Monitoring Active' : '🔴 Monitoring Stopped';
+  const extensionLabel = extensionCount > 0 ? `📊 Tracking ${extensionCount} extension${extensionCount !== 1 ? 's' : ''}` : '📊 No extensions tracked';
 
   const contextMenu = Menu.buildFromTemplate([
     {
-      label: 'Show Dashboard',
+      label: statusLabel,
+      enabled: false
+    },
+    {
+      label: extensionLabel,
+      enabled: false
+    },
+    {
+      type: 'separator'
+    },
+    {
+      label: '📈 Show Dashboard',
       click: () => {
         if (mainWindow) {
           mainWindow.show();
+          mainWindow.focus();
         } else {
           createWindow();
         }
       }
     },
     {
-      label: 'Run Check Now',
+      label: '🔄 Run Check Now',
       click: async () => {
         if (runMonitoringCycle) {
-          await runMonitoringCycle();
-          if (mainWindow) {
-            mainWindow.webContents.send('refresh-data');
+          try {
+            showNotification('Monitoring Cycle', 'Starting manual check...');
+            await runMonitoringCycle();
+            if (mainWindow) {
+              mainWindow.webContents.send('refresh-data');
+            }
+            showNotification('Check Complete', 'Monitoring cycle finished successfully');
+          } catch (err) {
+            showNotification('Check Failed', `Error: ${err.message}`);
           }
         }
       }
@@ -115,14 +154,16 @@ function createTray() {
       type: 'separator'
     },
     {
-      label: schedulerRunning ? 'Stop Monitoring' : 'Start Monitoring',
+      label: schedulerRunning ? '⏸️ Stop Monitoring' : '▶️ Start Monitoring',
       click: () => {
         if (schedulerRunning) {
           if (stopScheduler) stopScheduler();
           schedulerRunning = false;
+          showNotification('Monitoring Stopped', 'Background monitoring has been paused');
         } else {
           if (startScheduler) startScheduler();
           schedulerRunning = true;
+          showNotification('Monitoring Started', 'Background monitoring is now active');
         }
         createTray();
       }
@@ -131,7 +172,7 @@ function createTray() {
       type: 'separator'
     },
     {
-      label: 'Quit',
+      label: '❌ Quit',
       click: () => {
         app.isQuitting = true;
         app.quit();
@@ -140,15 +181,56 @@ function createTray() {
   ]);
 
   tray.setContextMenu(contextMenu);
-  tray.setToolTip('Chrome Stats Monitor');
+  
+  const tooltipText = `Chrome Stats Monitor\n${statusLabel.replace('🟢 ', '').replace('🔴 ', '')}\n${extensionLabel.replace('📊 ', '')}`;
+  tray.setToolTip(tooltipText);
 
+  tray.removeAllListeners('click');
   tray.on('click', () => {
     if (mainWindow) {
-      mainWindow.show();
+      if (mainWindow.isVisible()) {
+        mainWindow.focus();
+      } else {
+        mainWindow.show();
+        mainWindow.focus();
+      }
     } else {
       createWindow();
     }
   });
+
+  tray.removeAllListeners('double-click');
+  tray.on('double-click', () => {
+    if (mainWindow) {
+      mainWindow.show();
+      mainWindow.focus();
+    } else {
+      createWindow();
+    }
+  });
+}
+
+// Show system notification
+function showNotification(title, body) {
+  if (Notification.isSupported()) {
+    const notification = new Notification({
+      title: title,
+      body: body,
+      icon: path.join(__dirname, '../assets/icon.png'),
+      silent: false
+    });
+    
+    notification.on('click', () => {
+      if (mainWindow) {
+        mainWindow.show();
+        mainWindow.focus();
+      } else {
+        createWindow();
+      }
+    });
+    
+    notification.show();
+  }
 }
 
 // Initialize application
@@ -164,6 +246,7 @@ app.whenReady().then(async () => {
     startScheduler = schedulerModule.startScheduler;
     stopScheduler = schedulerModule.stopScheduler;
     runMonitoringCycle = schedulerModule.runMonitoringCycle;
+    monitoringEvents = schedulerModule.monitoringEvents;
     dbApi = require('./database-api');
 
     logger.info('Chrome Stats Monitor - Electron App Starting');
@@ -181,6 +264,34 @@ app.whenReady().then(async () => {
     // Auto-start monitoring
     startScheduler();
     schedulerRunning = true;
+
+    // Subscribe to monitoring events
+    if (monitoringEvents) {
+      monitoringEvents.on('changes-detected', (data) => {
+        const { extensionName, changes } = data;
+        const changeCount = Object.keys(changes).length;
+        const changeTypes = Object.keys(changes).join(', ');
+        
+        showNotification(
+          `📊 ${extensionName}`,
+          `${changeCount} change${changeCount > 1 ? 's' : ''} detected: ${changeTypes}`
+        );
+        
+        // Refresh UI if window is visible
+        if (mainWindow && mainWindow.isVisible()) {
+          mainWindow.webContents.send('refresh-data');
+        }
+        
+        // Update tray menu to reflect new data
+        createTray();
+      });
+    }
+
+    // S
+    // Show startup notification
+    setTimeout(() => {
+      showNotification('Chrome Stats Monitor', 'App started successfully. Monitoring is active.');
+    }, 2000);
 
     logger.info('Electron app initialized successfully');
   } catch (error) {

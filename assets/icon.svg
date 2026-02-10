@@ -1,0 +1,29 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg width="256" height="256" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="grad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#4285f4;stop-opacity:1" />
+      <stop offset="100%" style="stop-color:#1a73e8;stop-opacity:1" />
+    </linearGradient>
+  </defs>
+  
+  <!-- Background circle -->
+  <circle cx="128" cy="128" r="120" fill="url(#grad)" />
+  
+  <!-- Chart bars -->
+  <rect x="50" y="140" width="30" height="50" fill="white" opacity="0.9" rx="3" />
+  <rect x="95" y="110" width="30" height="80" fill="white" opacity="0.9" rx="3" />
+  <rect x="140" y="90" width="30" height="100" fill="white" opacity="0.9" rx="3" />
+  <rect x="185" y="120" width="30" height="70" fill="white" opacity="0.9" rx="3" />
+  
+  <!-- Trend line -->
+  <path d="M 50 150 L 110 120 L 155 100 L 200 130" 
+        stroke="white" stroke-width="4" fill="none" 
+        stroke-linecap="round" stroke-linejoin="round" opacity="0.7" />
+  
+  <!-- Dots on trend line -->
+  <circle cx="50" cy="150" r="5" fill="white" />
+  <circle cx="110" cy="120" r="5" fill="white" />
+  <circle cx="155" cy="100" r="5" fill="white" />
+  <circle cx="200" cy="130" r="5" fill="white" />
+</svg>
