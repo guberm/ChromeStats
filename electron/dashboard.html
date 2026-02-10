@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Chrome Stats Monitor</title>
+  <link rel="stylesheet" href="styles.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+</head>
+<body>
+  <div class="app-container">
+    <!-- Header -->
+    <header class="header">
+      <div class="header-content">
+        <h1>📊 Chrome Stats Monitor</h1>
+        <div class="header-actions">
+          <button id="refresh-btn" class="btn btn-primary">
+            <span class="icon">🔄</span> Refresh
+          </button>
+          <button id="add-extension-btn" class="btn btn-success">
+            <span class="icon">➕</span> Add Extension
+          </button>
+          <div class="scheduler-toggle">
+            <label class="toggle-label">
+              <input type="checkbox" id="scheduler-toggle" checked>
+              <span class="toggle-slider"></span>
+            </label>
+            <span id="scheduler-status">Monitoring Active</span>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- Main Content -->
+    <div class="main-content">
+      <!-- Sidebar -->
+      <aside class="sidebar">
+        <div class="sidebar-section">
+          <h3>Extensions</h3>
+          <div id="extensions-list" class="extensions-list">
+            <div class="loading">Loading extensions...</div>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Content Area -->
+      <main class="content">
+        <!-- Stats Cards -->
+        <div class="stats-cards">
+          <div class="stat-card">
+            <div class="stat-icon">👥</div>
+            <div class="stat-info">
+              <div class="stat-value" id="total-extensions">0</div>
+              <div class="stat-label">Extensions Tracked</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">📈</div>
+            <div class="stat-info">
+              <div class="stat-value" id="total-changes">0</div>
+              <div class="stat-label">Changes (24h)</div>
+            </div>
+          </div>
+          <div class="stat-card">
+            <div class="stat-icon">✅</div>
+            <div class="stat-info">
+              <div class="stat-value" id="active-monitoring">0</div>
+              <div class="stat-label">Active</div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tabs -->
+        <div class="tabs">
+          <button class="tab-btn active" data-tab="overview">Overview</button>
+          <button class="tab-btn" data-tab="charts">Charts</button>
+          <button class="tab-btn" data-tab="history">Change History</button>
+          <button class="tab-btn" data-tab="settings">Settings</button>
+        </div>
+
+        <!-- Tab Content -->
+        <div class="tab-content">
+          <!-- Overview Tab -->
+          <div id="overview-tab" class="tab-pane active">
+            <div class="extension-grid" id="extension-grid">
+              <div class="loading">Select an extension from the sidebar</div>
+            </div>
+          </div>
+
+          <!-- Charts Tab -->
+          <div id="charts-tab" class="tab-pane">
+            <div class="chart-container">
+              <div class="chart-header">
+                <h3>Historical Data</h3>
+                <select id="chart-timerange" class="select">
+                  <option value="24">Last 24 Hours</option>
+                  <option value="168" selected>Last 7 Days</option>
+                  <option value="720">Last 30 Days</option>
+                </select>
+              </div>
+              <canvas id="history-chart"></canvas>
+            </div>
+          </div>
+
+          <!-- History Tab -->
+          <div id="history-tab" class="tab-pane">
+            <div class="history-container">
+              <h3>Recent Changes</h3>
+              <div id="changes-list" class="changes-list">
+                <div class="loading">Loading changes...</div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Settings Tab -->
+          <div id="settings-tab" class="tab-pane">
+            <div class="settings-container">
+              <h3>Configuration</h3>
+              
+              <div class="settings-section">
+                <h4>Email Configuration</h4>
+                <form id="email-config-form" class="email-config-form">
+                  <div class="form-group">
+                    <label>Email Service</label>
+                    <input type="text" id="email-service" value="gmail" class="input" disabled>
+                  </div>
+                  <div class="form-group">
+                    <label>From Email</label>
+                    <input type="email" id="email-sender" class="input" placeholder="your-email@gmail.com">
+                  </div>
+                  <div class="form-group">
+                    <label>Email Password / App Password</label>
+                    <input type="password" id="email-password" class="input" placeholder="••••••••">
+                  </div>
+                  <div class="form-group">
+                    <label>To Email (Recipient)</label>
+                    <input type="email" id="email-recipient" class="input" placeholder="recipient@example.com">
+                  </div>
+                  <div class="form-actions">
+                    <button type="submit" class="btn btn-primary">Save Email Config</button>
+                    <span id="email-status-msg"></span>
+                  </div>
+                  <p class="form-help">
+                    💡 For Gmail: Use an <a href="https://myaccount.google.com/apppasswords" target="_blank">App Password</a> (not your regular password)
+                  </p>
+                </form>
+              </div>
+
+              <form id="settings-form" class="settings-form">
+                <div class="form-group">
+                  <label>Monitor Interval (minutes)</label>
+                  <input type="number" id="interval-input" min="1" max="1440" class="input">
+                </div>
+                <div class="form-group">
+                  <label>Email Notifications</label>
+                  <div class="checkbox-group">
+                    <label>
+                      <input type="checkbox" id="email-enabled">
+                      <span>Email notifications enabled</span>
+                    </label>
+                  </div>
+                </div>
+                <div class="form-group">
+                  <label>Notify on Change</label>
+                  <div class="checkbox-group">
+                    <label>
+                      <input type="checkbox" id="notify-on-change">
+                      <span>Send email on detected changes</span>
+                    </label>
+                  </div>
+                </div>
+                <div class="form-actions">
+                  <button type="submit" class="btn btn-primary">Save Settings</button>
+                  <p class="form-note">Note: Changes require app restart</p>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Add Extension Modal -->
+  <div id="add-modal" class="modal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h2>Add Extension</h2>
+        <button class="modal-close">&times;</button>
+      </div>
+      <form id="add-extension-form">
+        <div class="form-group">
+          <label>Profile URL</label>
+          <input type="url" id="extension-url" placeholder="https://chrome-stats.com/a/..." required class="input">
+          <p class="form-help">Enter your Chrome Stats profile URL</p>
+        </div>
+        <div class="form-actions">
+          <button type="button" class="btn btn-secondary" id="cancel-add">Cancel</button>
+          <button type="submit" class="btn btn-primary">Add & Scan</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>
